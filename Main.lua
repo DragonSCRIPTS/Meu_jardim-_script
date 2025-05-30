@@ -3,7 +3,7 @@
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/DragonSCRIPTS/Meu_jardim-_script/refs/heads/main/Code"))()
 WindUI:SetNotificationLower(true)
-local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jxereas/UI-Libraries/main/notification_gui_library.lua", true))()
+local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/DragonSCRIPTS/Meu_jardim-_script/refs/heads/main/notification_gui_library.lua", true))()
 
 -- Serviços do Roblox
 local Players = game:GetService("Players")
