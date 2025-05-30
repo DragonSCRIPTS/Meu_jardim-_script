@@ -1,15 +1,14 @@
--- Grow-a-Garden Script Otimizado
--- Versão 2.0 - Código limpo e otimizado
-
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/DragonSCRIPTS/Meu_jardim-_script/refs/heads/main/Code"))()
-WindUI:SetNotificationLower(true)
-local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/DragonSCRIPTS/Meu_jardim-_script/refs/heads/main/notification_gui_library.lua", true))()
+-- Grow-a-Garden Script Otimizado - Versão Reduzida
+-- Sem carregamentos externos - Interface nativa
+-- Todas as funções mantidas
 
 -- Serviços do Roblox
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
 
 -- Variáveis principais
 local localPlayer = Players.LocalPlayer
@@ -46,29 +45,327 @@ local AVAILABLE_SEEDS = {
     'Pepper', 'Cacao', 'Beanstalk'
 }
 
--- Temas disponíveis
-local THEMES = {'Rose', 'Indigo', 'Plant', 'Red', 'Light', 'Dark'}
+-- Sistema de Notificação Simples
+local function createNotification(title, message, duration)
+    local notifGui = Instance.new("ScreenGui")
+    notifGui.Name = "GardenNotification"
+    notifGui.Parent = CoreGui
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 80)
+    frame.Position = UDim2.new(1, -320, 0, 20)
+    frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    frame.BorderSizePixel = 0
+    frame.Parent = notifGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+    
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -20, 0, 30)
+    titleLabel.Position = UDim2.new(0, 10, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextScaled = true
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Parent = frame
+    
+    local messageLabel = Instance.new("TextLabel")
+    messageLabel.Size = UDim2.new(1, -20, 0, 35)
+    messageLabel.Position = UDim2.new(0, 10, 0, 35)
+    messageLabel.BackgroundTransparency = 1
+    messageLabel.Text = message
+    messageLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    messageLabel.TextScaled = true
+    messageLabel.Font = Enum.Font.Gotham
+    messageLabel.Parent = frame
+    
+    -- Animação de entrada
+    frame.Position = UDim2.new(1, 20, 0, 20)
+    local tweenIn = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = UDim2.new(1, -320, 0, 20)})
+    tweenIn:Play()
+    
+    -- Remover após duração
+    task.wait(duration or 2)
+    local tweenOut = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Position = UDim2.new(1, 20, 0, 20)})
+    tweenOut:Play()
+    tweenOut.Completed:Connect(function()
+        notifGui:Destroy()
+    end)
+end
 
--- Criação da interface otimizada
-local Window = WindUI:CreateWindow({
-    Title = "Grow-a-Garden Script",
-    Icon = "banana",
-    Folder = "GardenScript",
-    Size = UDim2.fromOffset(580, 460),
-    Transparent = true,
-    Theme = "Dark",
-    SideBarWidth = 200,
-    User = {
-        Enabled = true,
-        Anonymous = false,
-        Callback = function()
-            local curTheme = WindUI:GetCurrentTheme()
-            local themeIndex = table.find(THEMES, curTheme)
-            local nextIndex = (themeIndex == #THEMES) and 1 or (themeIndex + 1)
-            WindUI:SetTheme(THEMES[nextIndex])
-        end,
-    }
-})
+-- Interface Principal
+local function createMainGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "GardenScriptGUI"
+    screenGui.Parent = CoreGui
+    screenGui.ResetOnSpawn = false
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 400, 0, 500)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = mainFrame
+    
+    -- Título
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -20, 0, 40)
+    titleLabel.Position = UDim2.new(0, 10, 0, 10)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "🌱 Grow-a-Garden Script v2.0"
+    titleLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
+    titleLabel.TextScaled = true
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Parent = mainFrame
+    
+    -- Botão Fechar
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -40, 0, 10)
+    closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    closeButton.Text = "✕"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.TextScaled = true
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.Parent = mainFrame
+    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 6)
+    closeCorner.Parent = closeButton
+    
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+    
+    -- Container principal
+    local contentFrame = Instance.new("ScrollingFrame")
+    contentFrame.Size = UDim2.new(1, -20, 1, -70)
+    contentFrame.Position = UDim2.new(0, 10, 0, 60)
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.ScrollBarThickness = 6
+    contentFrame.Parent = mainFrame
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 10)
+    layout.Parent = contentFrame
+    
+    -- Função para criar botões
+    local function createButton(text, callback)
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1, 0, 0, 40)
+        button.BackgroundColor3 = Color3.fromRGB(50, 120, 200)
+        button.Text = text
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        button.TextScaled = true
+        button.Font = Enum.Font.Gotham
+        button.Parent = contentFrame
+        
+        local buttonCorner = Instance.new("UICorner")
+        buttonCorner.CornerRadius = UDim.new(0, 6)
+        buttonCorner.Parent = button
+        
+        button.MouseButton1Click:Connect(callback)
+        return button
+    end
+    
+    -- Função para criar toggle
+    local function createToggle(text, callback, default)
+        local toggleFrame = Instance.new("Frame")
+        toggleFrame.Size = UDim2.new(1, 0, 0, 40)
+        toggleFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        toggleFrame.Parent = contentFrame
+        
+        local toggleCorner = Instance.new("UICorner")
+        toggleCorner.CornerRadius = UDim.new(0, 6)
+        toggleCorner.Parent = toggleFrame
+        
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, -60, 1, 0)
+        label.Position = UDim2.new(0, 10, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = text
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextScaled = true
+        label.Font = Enum.Font.Gotham
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = toggleFrame
+        
+        local toggleButton = Instance.new("TextButton")
+        toggleButton.Size = UDim2.new(0, 40, 0, 25)
+        toggleButton.Position = UDim2.new(1, -50, 0.5, -12.5)
+        toggleButton.BackgroundColor3 = default and Color3.fromRGB(100, 200, 100) or Color3.fromRGB(100, 100, 100)
+        toggleButton.Text = default and "ON" or "OFF"
+        toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        toggleButton.TextScaled = true
+        toggleButton.Font = Enum.Font.GothamBold
+        toggleButton.Parent = toggleFrame
+        
+        local toggleButtonCorner = Instance.new("UICorner")
+        toggleButtonCorner.CornerRadius = UDim.new(0, 4)
+        toggleButtonCorner.Parent = toggleButton
+        
+        local isOn = default or false
+        toggleButton.MouseButton1Click:Connect(function()
+            isOn = not isOn
+            toggleButton.Text = isOn and "ON" or "OFF"
+            toggleButton.BackgroundColor3 = isOn and Color3.fromRGB(100, 200, 100) or Color3.fromRGB(100, 100, 100)
+            callback(isOn)
+        end)
+        
+        return toggleFrame
+    end
+    
+    -- Função para criar dropdown
+    local function createDropdown(text, options, callback, default)
+        local dropdownFrame = Instance.new("Frame")
+        dropdownFrame.Size = UDim2.new(1, 0, 0, 40)
+        dropdownFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        dropdownFrame.Parent = contentFrame
+        
+        local dropdownCorner = Instance.new("UICorner")
+        dropdownCorner.CornerRadius = UDim.new(0, 6)
+        dropdownCorner.Parent = dropdownFrame
+        
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(0.4, 0, 1, 0)
+        label.Position = UDim2.new(0, 10, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = text
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextScaled = true
+        label.Font = Enum.Font.Gotham
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = dropdownFrame
+        
+        local dropdown = Instance.new("TextButton")
+        dropdown.Size = UDim2.new(0.55, 0, 0, 30)
+        dropdown.Position = UDim2.new(0.4, 10, 0.5, -15)
+        dropdown.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        dropdown.Text = default or options[1]
+        dropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
+        dropdown.TextScaled = true
+        dropdown.Font = Enum.Font.Gotham
+        dropdown.Parent = dropdownFrame
+        
+        local dropdownButtonCorner = Instance.new("UICorner")
+        dropdownButtonCorner.CornerRadius = UDim.new(0, 4)
+        dropdownButtonCorner.Parent = dropdown
+        
+        local isOpen = false
+        local optionsFrame = Instance.new("Frame")
+        optionsFrame.Size = UDim2.new(0.55, 0, 0, #options * 30)
+        optionsFrame.Position = UDim2.new(0.4, 10, 1, 5)
+        optionsFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        optionsFrame.Visible = false
+        optionsFrame.Parent = dropdownFrame
+        
+        local optionsCorner = Instance.new("UICorner")
+        optionsCorner.CornerRadius = UDim.new(0, 4)
+        optionsCorner.Parent = optionsFrame
+        
+        local optionsLayout = Instance.new("UIListLayout")
+        optionsLayout.Parent = optionsFrame
+        
+        for _, option in ipairs(options) do
+            local optionButton = Instance.new("TextButton")
+            optionButton.Size = UDim2.new(1, 0, 0, 30)
+            optionButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            optionButton.Text = option
+            optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            optionButton.TextScaled = true
+            optionButton.Font = Enum.Font.Gotham
+            optionButton.Parent = optionsFrame
+            
+            optionButton.MouseButton1Click:Connect(function()
+                dropdown.Text = option
+                optionsFrame.Visible = false
+                isOpen = false
+                callback(option)
+            end)
+        end
+        
+        dropdown.MouseButton1Click:Connect(function()
+            isOpen = not isOpen
+            optionsFrame.Visible = isOpen
+        end)
+        
+        return dropdownFrame
+    end
+    
+    -- Criar elementos da interface
+    createButton("📍 Definir Posição de Plantio", function()
+        local character = localPlayer.Character
+        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            plant_position = rootPart.Position
+            local posStr = string.format("%.0f, %.0f, %.0f", plant_position.X, plant_position.Y, plant_position.Z)
+            task.spawn(createNotification, "Posição Definida", "Nova posição: " .. posStr, 2)
+        else
+            task.spawn(createNotification, "Erro", "Personagem não encontrado", 2)
+        end
+    end)
+    
+    createDropdown("🌱 Seleção de Semente:", AVAILABLE_SEEDS, function(option)
+        selected_seed = option
+        if settings.debug_mode then
+            print("Semente selecionada:", option)
+        end
+    end, "Carrot")
+    
+    createToggle("🚀 Auto Plantar", function(state)
+        is_auto_planting = state
+        if state then
+            task.spawn(autoPlantSeedsOptimized, selected_seed)
+            task.spawn(createNotification, "Auto Plantar", "Ativado", 1)
+        else
+            task.spawn(createNotification, "Auto Plantar", "Desativado", 1)
+        end
+    end, false)
+    
+    createToggle("🍎 Auto Coletar", function(state)
+        is_auto_collecting = state
+        if state then
+            task.spawn(autoCollectFruitsOptimized)
+            task.spawn(createNotification, "Auto Coletar", "Ativado", 1)
+        else
+            task.spawn(createNotification, "Auto Coletar", "Desativado", 1)
+        end
+    end, false)
+    
+    createToggle("💰 Compra Automática", function(state)
+        settings.auto_buy_seeds = state
+    end, settings.auto_buy_seeds)
+    
+    createToggle("📏 Verificação de Distância", function(state)
+        settings.use_distance_check = state
+    end, settings.use_distance_check)
+    
+    createToggle("🎯 Coletar Fruta Mais Próxima", function(state)
+        settings.collect_nearest_fruit = state
+    end, settings.collect_nearest_fruit)
+    
+    createToggle("🐛 Modo Debug", function(state)
+        settings.debug_mode = state
+    end, settings.debug_mode)
+    
+    -- Ajustar tamanho do scroll
+    contentFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        contentFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
+    end)
+    
+    return screenGui
+end
 
 -- Função otimizada para encontrar a fazenda do player
 local function getPlayerFarm()
@@ -149,7 +446,7 @@ local function equipSeed(seedName)
 end
 
 -- Função otimizada para coletar frutas
-local function autoCollectFruitsOptimized()
+function autoCollectFruitsOptimized()
     while is_auto_collecting do
         if not is_auto_collecting then break end
 
@@ -232,7 +529,7 @@ local function autoCollectFruitsOptimized()
 end
 
 -- Função otimizada para plantar sementes
-local function autoPlantSeedsOptimized(seedName)
+function autoPlantSeedsOptimized(seedName)
     while is_auto_planting do
         if not is_auto_planting then break end
         
@@ -295,162 +592,12 @@ end
 -- Inicialização
 initializePlantPosition()
 
--- Criação das abas
-local TabMain = Window:Tab({
-    Title = "Principal",
-    Icon = "rbxassetid://124620632231839",
-    Locked = false,
-})
-
-local TabSettings = Window:Tab({
-    Title = "Configurações",
-    Icon = "rbxassetid://96957318452720",
-    Locked = false,
-})
-
-Window:SelectTab(1)
-
--- Interface Principal
-local ButtonSetPos = TabMain:Button({
-    Title = "Definir Posição de Plantio",
-    Desc = "Define a posição onde as sementes serão plantadas",
-    Locked = false,
-    Callback = function()
-        local character = localPlayer.Character
-        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-        if rootPart then
-            plant_position = rootPart.Position
-            local posStr = string.format("%.0f, %.0f, %.0f", plant_position.X, plant_position.Y, plant_position.Z)
-            Notification.new("info", "Posição Definida", "Nova posição: " .. posStr):deleteTimeout(2)
-        else
-            Notification.new("error", "Erro", "Personagem não encontrado"):deleteTimeout(2)
-        end
-    end
-})
-
-local DropdownSeed = TabMain:Dropdown({
-    Title = "Seleção de Semente",
-    Values = AVAILABLE_SEEDS,
-    Value = "Carrot",
-    Multi = false,
-    AllowNone = false,
-    Callback = function(option) 
-        selected_seed = option
-        if settings.debug_mode then
-            print("Semente selecionada:", option)
-        end
-    end
-})
-
-local ToggleAutoPlant = TabMain:Toggle({
-    Title = "Auto Plantar",
-    Desc = "Planta automaticamente as sementes selecionadas",
-    Default = false,
-    Callback = function(state) 
-        is_auto_planting = state
-        if state then
-            task.spawn(autoPlantSeedsOptimized, selected_seed)
-            Notification.new("success", "Auto Plantar", "Ativado"):deleteTimeout(1)
-        else
-            Notification.new("info", "Auto Plantar", "Desativado"):deleteTimeout(1)
-        end
-    end
-})
-
-local ToggleAutoCollect = TabMain:Toggle({
-    Title = "Auto Coletar",
-    Desc = "Coleta automaticamente frutas das plantas",
-    Default = false,
-    Callback = function(state) 
-        is_auto_collecting = state
-        if state then
-            task.spawn(autoCollectFruitsOptimized)
-            Notification.new("success", "Auto Coletar", "Ativado"):deleteTimeout(1)
-        else
-            Notification.new("info", "Auto Coletar", "Desativado"):deleteTimeout(1)
-        end
-    end
-})
-
--- Interface de Configurações
-local ToggleAutoBuy = TabSettings:Toggle({
-    Title = "Compra Automática",
-    Desc = "Compra automaticamente sementes quando acabarem",
-    Default = settings.auto_buy_seeds,
-    Callback = function(state) 
-        settings.auto_buy_seeds = state
-    end
-})
-
-local ToggleDistCheck = TabSettings:Toggle({
-    Title = "Verificação de Distância",
-    Desc = "Coleta apenas frutas dentro de uma distância específica",
-    Default = settings.use_distance_check,
-    Callback = function(state) 
-        settings.use_distance_check = state
-    end
-})
-
-local ToggleNearestFruit = TabSettings:Toggle({
-    Title = "Coletar Fruta Mais Próxima",
-    Desc = "Prioriza a coleta da fruta mais próxima",
-    Default = settings.collect_nearest_fruit,
-    Callback = function(state) 
-        settings.collect_nearest_fruit = state
-    end
-})
-
-local SliderDistance = TabSettings:Slider({
-    Title = "Distância de Coleta",
-    Desc = "Distância máxima para coletar frutas",
-    Step = 0.5,
-    Value = {
-        Min = 1,
-        Max = 50,
-        Default = settings.collection_distance,
-    },
-    Callback = function(value)
-        settings.collection_distance = value
-    end
-})
-
-local SliderPlantDelay = TabSettings:Slider({
-    Title = "Delay de Plantio",
-    Desc = "Tempo de espera entre plantios (em segundos)",
-    Step = 0.05,
-    Value = {
-        Min = 0.05,
-        Max = 1,
-        Default = settings.plant_delay,
-    },
-    Callback = function(value)
-        settings.plant_delay = value
-    end
-})
-
-local SliderCollectDelay = TabSettings:Slider({
-    Title = "Delay de Coleta",
-    Desc = "Tempo de espera entre coletas (em segundos)",
-    Step = 0.01,
-    Value = {
-        Min = 0.01,
-        Max = 0.5,
-        Default = settings.collect_delay,
-    },
-    Callback = function(value)
-        settings.collect_delay = value
-    end
-})
-
-local ToggleDebug = TabSettings:Toggle({
-    Title = "Modo Debug",
-    Desc = "Ativa logs de debug no console",
-    Icon = "bug",
-    Default = settings.debug_mode,
-    Callback = function(state) 
-        settings.debug_mode = state
-    end
-})
+-- Criar interface
+local gui = createMainGUI()
 
 -- Notificação de carregamento
-Notification.new("success", "Script Carregado!", "Grow-a-Garden v2.0 - Otimizado e pronto para uso!"):deleteTimeout(3)
+task.spawn(createNotification, "Script Carregado!", "Grow-a-Garden v2.0 - Versão Otimizada!", 3)
+
+print("🌱 Grow-a-Garden Script v2.0 carregado com sucesso!")
+print("📋 Todas as funções mantidas sem carregamentos externos")
+print("🚀 Interface nativa do Roblox para melhor performance")
