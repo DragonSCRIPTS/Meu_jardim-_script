@@ -1,359 +1,412 @@
-Join our discord
-for more open source script with most popular games
-and grow money from code to your hub
-https://discord.gg/FmMuvkaWvG
+-- Grow-a-Garden Script Otimizado
+-- Versão 2.0 - Código limpo e otimizado
 
-
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local WindUI = loadstring(game:HttpGet("olink"))()
 WindUI:SetNotificationLower(true)
 local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jxereas/UI-Libraries/main/notification_gui_library.lua", true))()
 
-local Window = WindUI:CreateWindow({
-    Title = "Grow-a-Garden script",
-    Icon = "banana",
-    Author = "Discord: x2zu",
-    Folder = "x2zu",
-    Size = UDim2.fromOffset(580, 460),
-    Transparent = true,
-    Theme = "Dark",
-    SideBarWidth = 200,
-    -- Background = "",
-    User = {
-        Enabled = true,
-        Anonymous = false,
-        Callback = function()
-            themes = {'Rose', 'Indigo', 'Plant', 'Red', 'Light', 'Dark'}
-            local count, curTheme = nil, WindUI:GetCurrentTheme()
-            if table.find(themes, curTheme) == #themes then count = -5 else count = 1 end
-            WindUI:SetTheme(themes[table.find(themes, curTheme)+count])
-        end,
-    }
-})
--- Window:SetBackgroundImage("rbxassetid://id-here")
-
+-- Serviços do Roblox
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
+-- Variáveis principais
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer.PlayerGui
 
+-- Eventos do jogo
 local GameEvents = ReplicatedStorage:WaitForChild("GameEvents")
 local buySeedEvent = GameEvents:WaitForChild("BuySeedStock")
 local plantSeedEvent = GameEvents:WaitForChild("Plant_RE")
 
+-- Configurações otimizadas
 local settings = {
     auto_buy_seeds = true,
     use_distance_check = true,
     collection_distance = 17,
     collect_nearest_fruit = true,
-    debug_mode = false
+    debug_mode = false,
+    plant_delay = 0.1,
+    collect_delay = 0.05,
+    loop_delay = 0.2
 }
 
+-- Variáveis de estado
 local plant_position = nil
 local selected_seed = "Carrot"
 local is_auto_planting = false
 local is_auto_collecting = false
 
-local function get_player_farm()
+-- Lista de sementes disponíveis
+local AVAILABLE_SEEDS = {
+    'Carrot', 'Strawberry', 'Blueberry', 'Orange Tulip', 'Tomato', 
+    'Corn', 'Watermelon', 'Daffodil', 'Pumpkin', 'Apple', 'Bamboo', 
+    'Coconut', 'Cactus', 'Dragon Fruit', 'Mango', 'Grape', 'Mushroom', 
+    'Pepper', 'Cacao', 'Beanstalk'
+}
+
+-- Temas disponíveis
+local THEMES = {'Rose', 'Indigo', 'Plant', 'Red', 'Light', 'Dark'}
+
+-- Criação da interface otimizada
+local Window = WindUI:CreateWindow({
+    Title = "Grow-a-Garden Script",
+    Icon = "banana",
+    Folder = "GardenScript",
+    Size = UDim2.fromOffset(580, 460),
+    Transparent = true,
+    Theme = "Dark",
+    SideBarWidth = 200,
+    User = {
+        Enabled = true,
+        Anonymous = false,
+        Callback = function()
+            local curTheme = WindUI:GetCurrentTheme()
+            local themeIndex = table.find(THEMES, curTheme)
+            local nextIndex = (themeIndex == #THEMES) and 1 or (themeIndex + 1)
+            WindUI:SetTheme(THEMES[nextIndex])
+        end,
+    }
+})
+
+-- Função otimizada para encontrar a fazenda do player
+local function getPlayerFarm()
+    local farm = workspace.Farm:FindFirstChild(localPlayer.Name)
+    if farm then return farm end
+    
     for _, farm in ipairs(workspace.Farm:GetChildren()) do
-        local important_folder = farm:FindFirstChild("Important")
-        if important_folder then
-            local owner_value = important_folder:FindFirstChild("Data") and important_folder.Data:FindFirstChild("Owner")
-            if owner_value and owner_value.Value == localPlayer.Name then
-                return farm
+        local important = farm:FindFirstChild("Important")
+        if important then
+            local data = important:FindFirstChild("Data")
+            if data then
+                local owner = data:FindFirstChild("Owner")
+                if owner and owner.Value == localPlayer.Name then
+                    return farm
+                end
             end
         end
     end
     return nil
 end
 
-local function buy_seed(seed_name)
-    if playerGui.Seed_Shop.Frame.ScrollingFrame[seed_name].Main_Frame.Cost_Text.TextColor3 ~= Color3.fromRGB(255, 0, 0) then
-        if _G.table_settings.debug_mode then
-            print("Attempting to buy seed:", seed_name)
-        end
-        buySeedEvent:FireServer(seed_name)
-    end
-end
-
-local function equip_seed(seed_name)
-    local character = localPlayer.Character
-    if not character then return false end
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return false end
-
-    for _, item in ipairs(localPlayer.Backpack:GetChildren()) do
-        if item:GetAttribute("ITEM_TYPE") == "Seed" and item:GetAttribute("Seed") == seed_name then
-            humanoid:EquipTool(item)
-            task.wait()
-            local equipped_tool = character:FindFirstChildOfClass("Tool")
-            if equipped_tool and equipped_tool:GetAttribute("ITEM_TYPE") == "Seed" and equipped_tool:GetAttribute("Seed") == seed_name then
-                return equipped_tool
-            end
-        end
-    end
-
-    local equipped_tool = character:FindFirstChildOfClass("Tool")
-    if equipped_tool and equipped_tool:GetAttribute("ITEM_TYPE") == "Seed" and equipped_tool:GetAttribute("Seed") == seed_name then
-        return equipped_tool
-    end
+-- Função otimizada para comprar sementes
+local function buySeed(seedName)
+    local seedShop = playerGui:FindFirstChild("Seed_Shop")
+    if not seedShop then return false end
     
+    local frame = seedShop:FindFirstChild("Frame")
+    if not frame then return false end
+    
+    local scrollingFrame = frame:FindFirstChild("ScrollingFrame")
+    if not scrollingFrame then return false end
+    
+    local seedButton = scrollingFrame:FindFirstChild(seedName)
+    if not seedButton then return false end
+    
+    local mainFrame = seedButton:FindFirstChild("Main_Frame")
+    if not mainFrame then return false end
+    
+    local costText = mainFrame:FindFirstChild("Cost_Text")
+    if costText and costText.TextColor3 ~= Color3.fromRGB(255, 0, 0) then
+        if settings.debug_mode then
+            print("Comprando semente:", seedName)
+        end
+        buySeedEvent:FireServer(seedName)
+        return true
+    end
     return false
 end
 
-local function auto_collect_fruits()
+-- Função otimizada para equipar sementes
+local function equipSeed(seedName)
+    local character = localPlayer.Character
+    if not character then return nil end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return nil end
+
+    -- Verifica se já está equipado
+    local equippedTool = character:FindFirstChildOfClass("Tool")
+    if equippedTool and equippedTool:GetAttribute("ITEM_TYPE") == "Seed" and equippedTool:GetAttribute("Seed") == seedName then
+        return equippedTool
+    end
+
+    -- Procura na mochila
+    for _, item in ipairs(localPlayer.Backpack:GetChildren()) do
+        if item:GetAttribute("ITEM_TYPE") == "Seed" and item:GetAttribute("Seed") == seedName then
+            humanoid:EquipTool(item)
+            task.wait(0.1)
+            
+            local newEquippedTool = character:FindFirstChildOfClass("Tool")
+            if newEquippedTool and newEquippedTool:GetAttribute("ITEM_TYPE") == "Seed" and newEquippedTool:GetAttribute("Seed") == seedName then
+                return newEquippedTool
+            end
+        end
+    end
+    
+    return nil
+end
+
+-- Função otimizada para coletar frutas
+local function autoCollectFruitsOptimized()
     while is_auto_collecting do
-        if not is_auto_collecting then return end
+        if not is_auto_collecting then break end
 
         local character = localPlayer.Character
-        local player_root_part = character and character:FindFirstChild("HumanoidRootPart")
-        local current_farm = get_player_farm()
+        local playerRootPart = character and character:FindFirstChild("HumanoidRootPart")
+        local currentFarm = getPlayerFarm()
 
-        if not (player_root_part and current_farm and current_farm.Important and current_farm.Important.Plants_Physical) then
+        if not (playerRootPart and currentFarm) then
             if settings.debug_mode then
-                print("Player, farm, or plants not found, skipping auto_collect iteration.")
+                print("Player, fazenda ou plantas não encontrados")
             end
             task.wait(0.5)
             continue
         end
 
-        local plants_physical = current_farm.Important.Plants_Physical
+        local plantsPhysical = currentFarm:FindFirstChild("Important")
+        plantsPhysical = plantsPhysical and plantsPhysical:FindFirstChild("Plants_Physical")
+        
+        if not plantsPhysical then
+            task.wait(0.5)
+            continue
+        end
+
+        local collectedThisLoop = false
 
         if settings.collect_nearest_fruit then
-            local nearest_prompt = nil
-            local min_distance = math.huge
+            local nearestPrompt = nil
+            local minDistance = math.huge
 
-            for _, plant in ipairs(plants_physical:GetChildren()) do
-                if not is_auto_collecting then return end
+            for _, plant in ipairs(plantsPhysical:GetChildren()) do
+                if not is_auto_collecting then break end
+                
                 for _, descendant in ipairs(plant:GetDescendants()) do
-                    if not is_auto_collecting then return end
                     if descendant:IsA("ProximityPrompt") and descendant.Enabled and descendant.Parent then
-                        local distance_to_fruit = (player_root_part.Position - descendant.Parent.Position).Magnitude
-                        local can_collect = false
-
-                        if settings.use_distance_check then
-                            if distance_to_fruit <= settings.collection_distance then
-                                can_collect = true
-                            end
-                        else
-                            can_collect = true 
-                        end
-
-                        if can_collect and distance_to_fruit < min_distance then
-                            min_distance = distance_to_fruit
-                            nearest_prompt = descendant
+                        local distance = (playerRootPart.Position - descendant.Parent.Position).Magnitude
+                        
+                        local canCollect = not settings.use_distance_check or distance <= settings.collection_distance
+                        
+                        if canCollect and distance < minDistance then
+                            minDistance = distance
+                            nearestPrompt = descendant
                         end
                     end
                 end
             end
 
-            if nearest_prompt then
+            if nearestPrompt then
                 if settings.debug_mode then
-                    print("Nearest fruit prompt:", nearest_prompt.Parent and nearest_prompt.Parent.Name or "Unknown", "at distance", min_distance)
+                    print("Coletando fruta mais próxima a", math.floor(minDistance), "studs")
                 end
-                fireproximityprompt(nearest_prompt)
-                task.wait(0.05)
+                fireproximityprompt(nearestPrompt)
+                collectedThisLoop = true
+                task.wait(settings.collect_delay)
             end
         else
-            for _, plant in ipairs(plants_physical:GetChildren()) do
-                if not is_auto_collecting then return end
-                for _, fruit_prompt in ipairs(plant:GetDescendants()) do
-                    if not is_auto_collecting then return end
-                    if fruit_prompt:IsA("ProximityPrompt") and fruit_prompt.Enabled and fruit_prompt.Parent then
-                        local collect_this = false
+            for _, plant in ipairs(plantsPhysical:GetChildren()) do
+                if not is_auto_collecting then break end
+                
+                for _, fruitPrompt in ipairs(plant:GetDescendants()) do
+                    if fruitPrompt:IsA("ProximityPrompt") and fruitPrompt.Enabled and fruitPrompt.Parent then
+                        local canCollect = true
+                        
                         if settings.use_distance_check then
-                            local distance = (player_root_part.Position - fruit_prompt.Parent.Position).Magnitude
-                            if distance <= settings.collection_distance then
-                                collect_this = true
-                                if settings.debug_mode then
-                                    print("Collecting (distance):", fruit_prompt.Parent.Name, "at", distance)
-                                end
-                            end
-                        else
-                            collect_this = true
-                            if settings.debug_mode then
-                                print("Collecting (no distance check):", fruit_prompt.Parent.Name)
-                            end
+                            local distance = (playerRootPart.Position - fruitPrompt.Parent.Position).Magnitude
+                            canCollect = distance <= settings.collection_distance
                         end
 
-                        if collect_this then
-                            fireproximityprompt(fruit_prompt)
-                            task.wait(0.05)
+                        if canCollect then
+                            fireproximityprompt(fruitPrompt)
+                            collectedThisLoop = true
+                            task.wait(settings.collect_delay)
                         end
                     end
                 end
             end
         end
-        task.wait()
+
+        task.wait(collectedThisLoop and settings.loop_delay or 0.1)
     end
 end
 
-local function auto_plant_seeds(seed_name)
+-- Função otimizada para plantar sementes
+local function autoPlantSeedsOptimized(seedName)
     while is_auto_planting do
-        if not is_auto_planting then return end
+        if not is_auto_planting then break end
         
-        local seed_in_hand = equip_seed(seed_name)
+        local seedInHand = equipSeed(seedName)
 
-        if not seed_in_hand and settings.auto_buy_seeds then
-            buy_seed(seed_name)
-            task.wait(0.1)
-            seed_in_hand = equip_seed(seed_name)
+        if not seedInHand and settings.auto_buy_seeds then
+            if buySeed(seedName) then
+                task.wait(0.2)
+                seedInHand = equipSeed(seedName)
+            end
         end
         
-        if seed_in_hand and plant_position then
-            local quantity = seed_in_hand:GetAttribute("Quantity")
+        if seedInHand and plant_position then
+            local quantity = seedInHand:GetAttribute("Quantity")
             if quantity and quantity > 0 then
                 if settings.debug_mode then
-                    print("Planting", seed_name, "at", plant_position, "Quantity:", quantity)
+                    print("Plantando", seedName, "- Quantidade:", quantity)
                 end
                 
-                local args = {
-                    plant_position,
-                    seed_name 
-                }
-                plantSeedEvent:FireServer(unpack(args))
-                task.wait(0.1) 
+                plantSeedEvent:FireServer(plant_position, seedName)
+                task.wait(settings.plant_delay)
             else
-                 if settings.debug_mode then
-                    print("No quantity for seed or seed ran out:", seed_name)
+                if settings.debug_mode then
+                    print("Sem sementes disponíveis:", seedName)
                 end
-                -- is_auto_planting = false 
-                -- break
+                task.wait(1)
             end
         else
             if settings.debug_mode then
-                print("Could not equip seed or plant_position is nil. Seed:", seed_name, "Pos:", plant_position)
+                print("Não foi possível equipar semente ou posição não definida")
             end
             task.wait(1)
-            -- is_auto_planting = false 
-            -- break
         end
-        task.wait(0.2)
+        
+        task.wait(settings.loop_delay)
     end
 end
 
-
-local farm = get_player_farm()
-if farm and farm.Important and farm.Important.Plant_Locations then
-    local default_plant_location = farm.Important.Plant_Locations:FindFirstChildOfClass("Part")
-    if default_plant_location then
-        plant_position = default_plant_location.Position
-    else
-        plant_position = Vector3.new(0,0,0) 
-        warn("Default plant location part not found in farm.")
+-- Inicialização da posição de plantio
+local function initializePlantPosition()
+    local farm = getPlayerFarm()
+    if farm then
+        local important = farm:FindFirstChild("Important")
+        if important then
+            local plantLocations = important:FindFirstChild("Plant_Locations")
+            if plantLocations then
+                local defaultLocation = plantLocations:FindFirstChildOfClass("Part")
+                if defaultLocation then
+                    plant_position = defaultLocation.Position
+                    return
+                end
+            end
+        end
     end
-else
-    plant_position = Vector3.new(0,0,0)
-    warn("Player farm or plant locations not found on script start.")
+    
+    plant_position = Vector3.new(0, 0, 0)
+    warn("Posição padrão de plantio não encontrada")
 end
 
+-- Inicialização
+initializePlantPosition()
+
+-- Criação das abas
 local TabMain = Window:Tab({
-    Title = "Main",
+    Title = "Principal",
     Icon = "rbxassetid://124620632231839",
     Locked = false,
 })
 
 local TabSettings = Window:Tab({
-    Title = "Settings",
+    Title = "Configurações",
     Icon = "rbxassetid://96957318452720",
     Locked = false,
 })
 
 Window:SelectTab(1)
 
-local Button_set_pos_plant = TabMain:Button({
-    Title = "Set Plant Position",
-    Desc = "Set the position to plant seeds (defaults to center of your farm)",
+-- Interface Principal
+local ButtonSetPos = TabMain:Button({
+    Title = "Definir Posição de Plantio",
+    Desc = "Define a posição onde as sementes serão plantadas",
     Locked = false,
     Callback = function()
         local character = localPlayer.Character
-        local root_part = character and character:FindFirstChild("HumanoidRootPart")
-        if root_part then
-            plant_position = root_part.Position
-            Notification.new("info", "Position Set", "Planting position set to: " .. tostring(math.round(plant_position.X) ..', ' .. math.round(plant_position.Y) ..', ' .. math.round(plant_position.Z))):deleteTimeout(1)
+        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            plant_position = rootPart.Position
+            local posStr = string.format("%.0f, %.0f, %.0f", plant_position.X, plant_position.Y, plant_position.Z)
+            Notification.new("info", "Posição Definida", "Nova posição: " .. posStr):deleteTimeout(2)
         else
-            Notification.new("error", "Error", "Player character not found."):deleteTimeout(1) 
+            Notification.new("error", "Erro", "Personagem não encontrado"):deleteTimeout(2)
         end
     end
-})  
-local Dropdown_seed_select = TabMain:Dropdown({
-    Title = "Seed Selection",
-    Values = {'Carrot', 'Strawberry', "Blueberry", 'Orange Tulip', 'Tomato', 'Corn', 'Watermelon', 'Daffodil', "Pumpkin", 'Apple', 'Bamboo', 'Coconut', 'Cactus', 'Dragon Fruit', 'Mango', 'Grape', 'Mushroom', 'Pepper', 'Cacao', 'Beanstalk'},
+})
+
+local DropdownSeed = TabMain:Dropdown({
+    Title = "Seleção de Semente",
+    Values = AVAILABLE_SEEDS,
     Value = "Carrot",
     Multi = false,
-    AllowNone = true,
+    AllowNone = false,
     Callback = function(option) 
-        -- selected_seed = game:GetService("HttpService"):JSONEncode(option))
         selected_seed = option
+        if settings.debug_mode then
+            print("Semente selecionada:", option)
+        end
     end
 })
-local Toggle_auto_plant = TabMain:Toggle({
-    Title = "Auto Plant",
-    Desc = "Automatically plants selected seeds at the set position",
-    -- Icon = "",
-    Default = is_auto_planting,
+
+local ToggleAutoPlant = TabMain:Toggle({
+    Title = "Auto Plantar",
+    Desc = "Planta automaticamente as sementes selecionadas",
+    Default = false,
     Callback = function(state) 
         is_auto_planting = state
         if state then
-            task.spawn(auto_plant_seeds, selected_seed)
+            task.spawn(autoPlantSeedsOptimized, selected_seed)
+            Notification.new("success", "Auto Plantar", "Ativado"):deleteTimeout(1)
+        else
+            Notification.new("info", "Auto Plantar", "Desativado"):deleteTimeout(1)
         end
     end
 })
 
-local Toggle_auto_collect = TabMain:Toggle({
-    Title = "Auto Collect",
-    Desc = "Automatically collects fruits from plants",
-    -- Icon = "",
-    Default = is_auto_collecting,
+local ToggleAutoCollect = TabMain:Toggle({
+    Title = "Auto Coletar",
+    Desc = "Coleta automaticamente frutas das plantas",
+    Default = false,
     Callback = function(state) 
         is_auto_collecting = state
         if state then
-            task.spawn(auto_collect_fruits)
+            task.spawn(autoCollectFruitsOptimized)
+            Notification.new("success", "Auto Coletar", "Ativado"):deleteTimeout(1)
+        else
+            Notification.new("info", "Auto Coletar", "Desativado"):deleteTimeout(1)
         end
     end
 })
 
-local Toggle_auto_boy_seeds = TabSettings:Toggle({
-    Title = "Auto Buy Seeds",
-    Desc = "Automatically buy seeds when they run out",
-    -- Icon = "bird",
+-- Interface de Configurações
+local ToggleAutoBuy = TabSettings:Toggle({
+    Title = "Compra Automática",
+    Desc = "Compra automaticamente sementes quando acabarem",
     Default = settings.auto_buy_seeds,
     Callback = function(state) 
         settings.auto_buy_seeds = state
     end
 })
-Toggle_auto_boy_seeds:Set(true) -- Default in toggle not working gayy
 
-local Toggle_dist_check = TabSettings:Toggle({
-    Title = "Use Distance Check",
-    Desc = "Enable to only collect fruits within a certain distance (-fps)",
-    -- Icon = "bird",
+local ToggleDistCheck = TabSettings:Toggle({
+    Title = "Verificação de Distância",
+    Desc = "Coleta apenas frutas dentro de uma distância específica",
     Default = settings.use_distance_check,
     Callback = function(state) 
         settings.use_distance_check = state
     end
 })
 
-local Toggle_collect_neear_f = TabSettings:Toggle({
-    Title = "Collect Nearest Fruit",
-    Desc = "Collect only the nearest fruit if distance check is enabled",
-    -- Icon = "bird",
-    Default = settings.use_distance_check,
+local ToggleNearestFruit = TabSettings:Toggle({
+    Title = "Coletar Fruta Mais Próxima",
+    Desc = "Prioriza a coleta da fruta mais próxima",
+    Default = settings.collect_nearest_fruit,
     Callback = function(state) 
         settings.collect_nearest_fruit = state
     end
 })
-Toggle_collect_neear_f:Set(true) -- Default in toggle not working gayy
 
-local Slider_collect_dist = TabSettings:Slider({
-    Title = "Collection Distance",
-    Desc = "Distance to collect fruits (if distance check is enabled)",
+local SliderDistance = TabSettings:Slider({
+    Title = "Distância de Coleta",
+    Desc = "Distância máxima para coletar frutas",
     Step = 0.5,
     Value = {
         Min = 1,
-        Max = 30,
+        Max = 50,
         Default = settings.collection_distance,
     },
     Callback = function(value)
@@ -361,9 +414,37 @@ local Slider_collect_dist = TabSettings:Slider({
     end
 })
 
-local Toggle_debug_mode = TabSettings:Toggle({
-    Title = "Debug Mode",
-    Desc = "Enable debug mode for console logs (console output)",
+local SliderPlantDelay = TabSettings:Slider({
+    Title = "Delay de Plantio",
+    Desc = "Tempo de espera entre plantios (em segundos)",
+    Step = 0.05,
+    Value = {
+        Min = 0.05,
+        Max = 1,
+        Default = settings.plant_delay,
+    },
+    Callback = function(value)
+        settings.plant_delay = value
+    end
+})
+
+local SliderCollectDelay = TabSettings:Slider({
+    Title = "Delay de Coleta",
+    Desc = "Tempo de espera entre coletas (em segundos)",
+    Step = 0.01,
+    Value = {
+        Min = 0.01,
+        Max = 0.5,
+        Default = settings.collect_delay,
+    },
+    Callback = function(value)
+        settings.collect_delay = value
+    end
+})
+
+local ToggleDebug = TabSettings:Toggle({
+    Title = "Modo Debug",
+    Desc = "Ativa logs de debug no console",
     Icon = "bug",
     Default = settings.debug_mode,
     Callback = function(state) 
@@ -371,4 +452,5 @@ local Toggle_debug_mode = TabSettings:Toggle({
     end
 })
 
-Notification.new("success", "Grow-a-Garden script loaded successfully!", "Version 1.1 | Enjoy gardening!"):deleteTimeout(5) 
+-- Notificação de carregamento
+Notification.new("success", "Script Carregado!", "Grow-a-Garden v2.0 - Otimizado e pronto para uso!"):deleteTimeout(3)
