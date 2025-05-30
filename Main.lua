@@ -1,7 +1,7 @@
 -- Grow-a-Garden Script Otimizado
 -- Versão 2.0 - Código limpo e otimizado
 
-local WindUI = loadstring(game:HttpGet("olink"))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/DragonSCRIPTS/Meu_jardim-_script/refs/heads/main/Code"))()
 WindUI:SetNotificationLower(true)
 local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jxereas/UI-Libraries/main/notification_gui_library.lua", true))()
 
