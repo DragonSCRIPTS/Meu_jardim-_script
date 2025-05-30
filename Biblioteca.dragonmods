@@ -1,0 +1,549 @@
+-- Biblioteca de Interface Grow-a-Garden
+-- Versão otimizada e modular para criação de GUI
+-- Autor: Sistema de Biblioteca UI
+
+local GardenUI = {}
+
+-- Serviços do Roblox
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+-- Variáveis locais
+local localPlayer = Players.LocalPlayer
+
+-- Configurações da biblioteca
+local UIConfig = {
+    MainFrameSize = UDim2.new(0, 400, 0, 500),
+    ButtonHeight = 40,
+    Padding = 10,
+    CornerRadius = UDim.new(0, 8),
+    Colors = {
+        Background = Color3.fromRGB(30, 30, 30),
+        Secondary = Color3.fromRGB(40, 40, 40),
+        Primary = Color3.fromRGB(50, 120, 200),
+        Success = Color3.fromRGB(100, 200, 100),
+        Danger = Color3.fromRGB(200, 50, 50),
+        Text = Color3.fromRGB(255, 255, 255),
+        TextSecondary = Color3.fromRGB(200, 200, 200)
+    }
+}
+
+-- Sistema de Notificação
+function GardenUI.createNotification(title, message, duration)
+    local notifGui = Instance.new("ScreenGui")
+    notifGui.Name = "GardenNotification"
+    notifGui.Parent = CoreGui
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 80)
+    frame.Position = UDim2.new(1, -320, 0, 20)
+    frame.BackgroundColor3 = UIConfig.Colors.Secondary
+    frame.BorderSizePixel = 0
+    frame.Parent = notifGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UIConfig.CornerRadius
+    corner.Parent = frame
+    
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -20, 0, 30)
+    titleLabel.Position = UDim2.new(0, 10, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = UIConfig.Colors.Text
+    titleLabel.TextScaled = true
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Parent = frame
+    
+    local messageLabel = Instance.new("TextLabel")
+    messageLabel.Size = UDim2.new(1, -20, 0, 35)
+    messageLabel.Position = UDim2.new(0, 10, 0, 35)
+    messageLabel.BackgroundTransparency = 1
+    messageLabel.Text = message
+    messageLabel.TextColor3 = UIConfig.Colors.TextSecondary
+    messageLabel.TextScaled = true
+    messageLabel.Font = Enum.Font.Gotham
+    messageLabel.Parent = frame
+    
+    -- Animação
+    frame.Position = UDim2.new(1, 20, 0, 20)
+    local tweenIn = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = UDim2.new(1, -320, 0, 20)})
+    tweenIn:Play()
+    
+    task.spawn(function()
+        task.wait(duration or 2)
+        local tweenOut = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Position = UDim2.new(1, 20, 0, 20)})
+        tweenOut:Play()
+        tweenOut.Completed:Connect(function()
+            notifGui:Destroy()
+        end)
+    end)
+end
+
+-- Função para criar botão básico
+function GardenUI.createButton(parent, text, callback, color)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 0, UIConfig.ButtonHeight)
+    button.BackgroundColor3 = color or UIConfig.Colors.Primary
+    button.Text = text
+    button.TextColor3 = UIConfig.Colors.Text
+    button.TextScaled = true
+    button.Font = Enum.Font.Gotham
+    button.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = button
+    
+    -- Efeito hover
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = button.BackgroundColor3:lerp(Color3.fromRGB(255, 255, 255), 0.1)}):Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = color or UIConfig.Colors.Primary}):Play()
+    end)
+    
+    if callback then
+        button.MouseButton1Click:Connect(callback)
+    end
+    
+    return button
+end
+
+-- Função para criar toggle
+function GardenUI.createToggle(parent, text, callback, defaultState)
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Size = UDim2.new(1, 0, 0, UIConfig.ButtonHeight)
+    toggleFrame.BackgroundColor3 = UIConfig.Colors.Secondary
+    toggleFrame.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = toggleFrame
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -60, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = UIConfig.Colors.Text
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = toggleFrame
+    
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0, 40, 0, 25)
+    toggleButton.Position = UDim2.new(1, -50, 0.5, -12.5)
+    toggleButton.BackgroundColor3 = defaultState and UIConfig.Colors.Success or Color3.fromRGB(100, 100, 100)
+    toggleButton.Text = defaultState and "ON" or "OFF"
+    toggleButton.TextColor3 = UIConfig.Colors.Text
+    toggleButton.TextScaled = true
+    toggleButton.Font = Enum.Font.GothamBold
+    toggleButton.Parent = toggleFrame
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 4)
+    toggleCorner.Parent = toggleButton
+    
+    local isOn = defaultState or false
+    
+    toggleButton.MouseButton1Click:Connect(function()
+        isOn = not isOn
+        toggleButton.Text = isOn and "ON" or "OFF"
+        local newColor = isOn and UIConfig.Colors.Success or Color3.fromRGB(100, 100, 100)
+        TweenService:Create(toggleButton, TweenInfo.new(0.2), {BackgroundColor3 = newColor}):Play()
+        if callback then callback(isOn) end
+    end)
+    
+    return toggleFrame, function() return isOn end
+end
+
+-- Função para criar dropdown com scroll otimizado
+function GardenUI.createDropdown(parent, text, options, callback, defaultOption)
+    local dropdownFrame = Instance.new("Frame")
+    dropdownFrame.Size = UDim2.new(1, 0, 0, UIConfig.ButtonHeight)
+    dropdownFrame.BackgroundColor3 = UIConfig.Colors.Secondary
+    dropdownFrame.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = dropdownFrame
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.4, 0, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = UIConfig.Colors.Text
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = dropdownFrame
+    
+    local dropdown = Instance.new("TextButton")
+    dropdown.Size = UDim2.new(0.5, 0, 0, 30)
+    dropdown.Position = UDim2.new(0.4, 10, 0.5, -15)
+    dropdown.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    dropdown.Text = (defaultOption or options[1]) .. " 🔽"
+    dropdown.TextColor3 = UIConfig.Colors.Text
+    dropdown.TextScaled = true
+    dropdown.Font = Enum.Font.Gotham
+    dropdown.Parent = dropdownFrame
+    
+    local dropdownCorner = Instance.new("UICorner")
+    dropdownCorner.CornerRadius = UDim.new(0, 4)
+    dropdownCorner.Parent = dropdown
+    
+    -- Container das opções com scroll
+    local optionsContainer = Instance.new("Frame")
+    optionsContainer.Size = UDim2.new(0.5, 0, 0, 125) -- Altura fixa para 4 itens
+    optionsContainer.Position = UDim2.new(0.4, 10, 1, 5)
+    optionsContainer.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    optionsContainer.Visible = false
+    optionsContainer.ZIndex = 15
+    optionsContainer.Parent = dropdownFrame
+    
+    local containerCorner = Instance.new("UICorner")
+    containerCorner.CornerRadius = UDim.new(0, 4)
+    containerCorner.Parent = optionsContainer
+    
+    -- ScrollingFrame para as opções
+    local optionsScroll = Instance.new("ScrollingFrame")
+    optionsScroll.Size = UDim2.new(1, -8, 1, -8)
+    optionsScroll.Position = UDim2.new(0, 4, 0, 4)
+    optionsScroll.BackgroundTransparency = 1
+    optionsScroll.ScrollBarThickness = 4
+    optionsScroll.ScrollBarImageColor3 = UIConfig.Colors.Primary
+    optionsScroll.CanvasSize = UDim2.new(0, 0, 0, #options * 30)
+    optionsScroll.ZIndex = 16
+    optionsScroll.Parent = optionsContainer
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Parent = optionsScroll
+    
+    local selectedOption = defaultOption or options[1]
+    
+    -- Criar opções
+    for i, option in ipairs(options) do
+        local optionFrame = Instance.new("Frame")
+        optionFrame.Size = UDim2.new(1, 0, 0, 30)
+        optionFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        optionFrame.ZIndex = 17
+        optionFrame.Parent = optionsScroll
+        
+        local optionButton = Instance.new("TextButton")
+        optionButton.Size = UDim2.new(1, -4, 1, 0)
+        optionButton.Position = UDim2.new(0, 2, 0, 0)
+        optionButton.BackgroundColor3 = option == selectedOption and UIConfig.Colors.Primary or Color3.fromRGB(45, 45, 45)
+        optionButton.Text = option == selectedOption and "✓ " .. option or option
+        optionButton.TextColor3 = UIConfig.Colors.Text
+        optionButton.TextScaled = true
+        optionButton.Font = Enum.Font.Gotham
+        optionButton.ZIndex = 18
+        optionButton.Parent = optionFrame
+        
+        local optionCorner = Instance.new("UICorner")
+        optionCorner.CornerRadius = UDim.new(0, 3)
+        optionCorner.Parent = optionButton
+        
+        -- Efeitos visuais
+        optionButton.MouseEnter:Connect(function()
+            if option ~= selectedOption then
+                TweenService:Create(optionButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(70, 70, 70)}):Play()
+            end
+        end)
+        
+        optionButton.MouseLeave:Connect(function()
+            if option ~= selectedOption then
+                TweenService:Create(optionButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+            end
+        end)
+        
+        optionButton.MouseButton1Click:Connect(function()
+            -- Atualizar seleção visual
+            for _, child in ipairs(optionsScroll:GetChildren()) do
+                if child:IsA("Frame") then
+                    local btn = child:FindFirstChild("TextButton")
+                    if btn then
+                        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+                        btn.Text = btn.Text:gsub("✓ ", "")
+                    end
+                end
+            end
+            
+            selectedOption = option
+            optionButton.BackgroundColor3 = UIConfig.Colors.Primary
+            optionButton.Text = "✓ " .. option
+            dropdown.Text = option .. " 🔽"
+            optionsContainer.Visible = false
+            
+            if callback then callback(option) end
+        end)
+    end
+    
+    dropdown.MouseButton1Click:Connect(function()
+        optionsContainer.Visible = not optionsContainer.Visible
+    end)
+    
+    return dropdownFrame
+end
+
+-- Sistema de Menus Separados
+function GardenUI.createTabSystem(parent)
+    local tabFrame = Instance.new("Frame")
+    tabFrame.Size = UDim2.new(1, 0, 0, 35)
+    tabFrame.BackgroundTransparency = 1
+    tabFrame.Parent = parent
+    
+    local tabContainer = Instance.new("Frame")
+    tabContainer.Size = UDim2.new(1, -20, 1, 0)
+    tabContainer.Position = UDim2.new(0, 10, 0, 0)
+    tabContainer.BackgroundTransparency = 1
+    tabContainer.Parent = tabFrame
+    
+    local tabLayout = Instance.new("UIListLayout")
+    tabLayout.FillDirection = Enum.FillDirection.Horizontal
+    tabLayout.Padding = UDim.new(0, 5)
+    tabLayout.Parent = tabContainer
+    
+    local tabs = {}
+    local contents = {}
+    local activeTab = nil
+    
+    local function createTab(name, icon)
+        local tab = Instance.new("TextButton")
+        tab.Size = UDim2.new(0.5, -2.5, 1, 0)
+        tab.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        tab.Text = icon .. " " .. name
+        tab.TextColor3 = UIConfig.Colors.TextSecondary
+        tab.TextScaled = true
+        tab.Font = Enum.Font.Gotham
+        tab.Parent = tabContainer
+        
+        local tabCorner = Instance.new("UICorner")
+        tabCorner.CornerRadius = UDim.new(0, 4)
+        tabCorner.Parent = tab
+        
+        tabs[name] = tab
+        return tab
+    end
+    
+    local function switchTab(tabName)
+        for name, tab in pairs(tabs) do
+            if name == tabName then
+                tab.BackgroundColor3 = UIConfig.Colors.Primary
+                tab.TextColor3 = UIConfig.Colors.Text
+                if contents[name] then
+                    contents[name].Visible = true
+                end
+            else
+                tab.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+                tab.TextColor3 = UIConfig.Colors.TextSecondary
+                if contents[name] then
+                    contents[name].Visible = false
+                end
+            end
+        end
+        activeTab = tabName
+    end
+    
+    return {
+        CreateTab = createTab,
+        SwitchTab = switchTab,
+        RegisterContent = function(tabName, content) contents[tabName] = content end
+    }
+end
+
+-- Função principal para criar a interface com sistema de abas
+function GardenUI.createMainInterface(title, callbacks)
+    -- Destruir GUI existente
+    local existingGui = CoreGui:FindFirstChild("GardenScriptGUI")
+    if existingGui then existingGui:Destroy() end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "GardenScriptGUI"
+    screenGui.Parent = CoreGui
+    screenGui.ResetOnSpawn = false
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UIConfig.MainFrameSize
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    mainFrame.BackgroundColor3 = UIConfig.Colors.Background
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.Parent = screenGui
+    
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UIConfig.CornerRadius
+    mainCorner.Parent = mainFrame
+    
+    -- Título
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -20, 0, 35)
+    titleLabel.Position = UDim2.new(0, 10, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title or "🌱 Grow-a-Garden Script v2.0"
+    titleLabel.TextColor3 = UIConfig.Colors.Success
+    titleLabel.TextScaled = true
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.Parent = mainFrame
+    
+    -- Botão fechar
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 25, 0, 25)
+    closeButton.Position = UDim2.new(1, -35, 0, 7.5)
+    closeButton.BackgroundColor3 = UIConfig.Colors.Danger
+    closeButton.Text = "✕"
+    closeButton.TextColor3 = UIConfig.Colors.Text
+    closeButton.TextScaled = true
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.Parent = mainFrame
+    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 4)
+    closeCorner.Parent = closeButton
+    
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+    
+    -- Sistema de abas
+    local tabSystem = GardenUI.createTabSystem(mainFrame)
+    local farmingTab = tabSystem.CreateTab("Farming", "🌱")
+    local settingsTab = tabSystem.CreateTab("Settings", "⚙️")
+    
+    -- Container principal para conteúdo das abas
+    local mainContent = Instance.new("Frame")
+    mainContent.Size = UDim2.new(1, -20, 1, -110)
+    mainContent.Position = UDim2.new(0, 10, 0, 100)
+    mainContent.BackgroundTransparency = 1
+    mainContent.Parent = mainFrame
+    
+    -- Conteúdo da aba Farming
+    local farmingContent = Instance.new("ScrollingFrame")
+    farmingContent.Size = UDim2.new(1, 0, 1, 0)
+    farmingContent.BackgroundTransparency = 1
+    farmingContent.ScrollBarThickness = 6
+    farmingContent.ScrollBarImageColor3 = UIConfig.Colors.Primary
+    farmingContent.Parent = mainContent
+    
+    local farmingLayout = Instance.new("UIListLayout")
+    farmingLayout.Padding = UDim.new(0, UIConfig.Padding)
+    farmingLayout.Parent = farmingContent
+    
+    -- Conteúdo da aba Settings
+    local settingsContent = Instance.new("ScrollingFrame")
+    settingsContent.Size = UDim2.new(1, 0, 1, 0)
+    settingsContent.BackgroundTransparency = 1
+    settingsContent.ScrollBarThickness = 6
+    settingsContent.ScrollBarImageColor3 = UIConfig.Colors.Primary
+    settingsContent.Visible = false
+    settingsContent.Parent = mainContent
+    
+    local settingsLayout = Instance.new("UIListLayout")
+    settingsLayout.Padding = UDim.new(0, UIConfig.Padding)
+    settingsLayout.Parent = settingsContent
+    
+    -- Registrar conteúdos das abas
+    tabSystem.RegisterContent("Farming", farmingContent)
+    tabSystem.RegisterContent("Settings", settingsContent)
+    
+    -- Eventos dos botões de aba
+    farmingTab.MouseButton1Click:Connect(function() tabSystem.SwitchTab("Farming") end)
+    settingsTab.MouseButton1Click:Connect(function() tabSystem.SwitchTab("Settings") end)
+    
+    -- Ativar aba inicial
+    tabSystem.SwitchTab("Farming")
+    
+    -- Função para atualizar scroll
+    local function updateScroll(content, layout)
+        content.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + UIConfig.Padding)
+    end
+    
+    farmingLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        updateScroll(farmingContent, farmingLayout)
+    end)
+    
+    settingsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        updateScroll(settingsContent, settingsLayout)
+    end)
+    
+    -- Retornar objetos para uso externo
+    return {
+        ScreenGui = screenGui,
+        MainFrame = mainFrame,
+        FarmingContent = farmingContent,
+        SettingsContent = settingsContent,
+        TabSystem = tabSystem,
+        CreateButton = function(parent, text, callback, color) 
+            return GardenUI.createButton(parent or farmingContent, text, callback, color) 
+        end,
+        CreateToggle = function(parent, text, callback, default) 
+            return GardenUI.createToggle(parent or settingsContent, text, callback, default) 
+        end,
+        CreateDropdown = function(parent, text, options, callback, default) 
+            return GardenUI.createDropdown(parent or farmingContent, text, options, callback, default) 
+        end,
+        ShowNotification = GardenUI.createNotification
+    }
+end
+
+-- Configurações exportadas
+GardenUI.Config = UIConfig
+GardenUI.AVAILABLE_SEEDS = {
+    'Carrot', 'Strawberry', 'Blueberry', 'Orange Tulip', 'Tomato', 
+    'Corn', 'Watermelon', 'Daffodil', 'Pumpkin', 'Apple', 'Bamboo', 
+    'Coconut', 'Cactus', 'Dragon Fruit', 'Mango', 'Grape', 'Mushroom', 
+    'Pepper', 'Cacao', 'Beanstalk'
+}
+
+-- Função de exemplo atualizada com sistema de abas
+function GardenUI.createExampleInterface()
+    local ui = GardenUI.createMainInterface("🌱 Grow-a-Garden Script v2.0")
+    
+    -- === ABA FARMING ===
+    ui.CreateButton(ui.FarmingContent, "📍 Definir Posição de Plantio", function()
+        ui.ShowNotification("Posição", "Posição definida com sucesso!", 2)
+    end, UIConfig.Colors.Success)
+    
+    ui.CreateDropdown(ui.FarmingContent, "🌱 Seleção de Semente:", GardenUI.AVAILABLE_SEEDS, function(option)
+        ui.ShowNotification("Semente", "Selecionada: " .. option, 1)
+    end, "Carrot")
+    
+    ui.CreateButton(ui.FarmingContent, "🚀 Auto Plantar", function()
+        ui.ShowNotification("Auto Plantar", "Função ativada!", 1)
+    end)
+    
+    ui.CreateButton(ui.FarmingContent, "🍎 Auto Coletar", function()
+        ui.ShowNotification("Auto Coletar", "Função ativada!", 1)
+    end)
+    
+    -- === ABA SETTINGS ===
+    ui.CreateToggle(ui.SettingsContent, "💰 Compra Automática", function(state)
+        ui.ShowNotification("Compra Auto", state and "Ativada" or "Desativada", 1)
+    end, true)
+    
+    ui.CreateToggle(ui.SettingsContent, "📏 Verificação de Distância", function(state)
+        ui.ShowNotification("Distância", state and "Ativada" or "Desativada", 1)
+    end, true)
+    
+    ui.CreateToggle(ui.SettingsContent, "🎯 Coletar Mais Próxima", function(state)
+        ui.ShowNotification("Coleta", state and "Ativada" or "Desativada", 1)
+    end, true)
+    
+    ui.CreateToggle(ui.SettingsContent, "🐛 Modo Debug", function(state)
+        ui.ShowNotification("Debug", state and "Ativado" or "Desativado", 1)
+    end, false)
+    
+    ui.ShowNotification("Biblioteca Carregada!", "Interface com abas criada!", 3)
+    
+    return ui
+end
+
+return GardenUI
